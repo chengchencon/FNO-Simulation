@@ -1,6 +1,6 @@
 # FNO Simulation
 
-A brief description of what this project does and who it's for.
+This repository contains the code necessary to reproduce the results presented in the paper "xxxx". The paper explores innovative approaches and methodologies in the field of [insert field of study, e.g., machine learning, data science, etc.], providing valuable insights and advancements.
 
 ## Table of Contents
 

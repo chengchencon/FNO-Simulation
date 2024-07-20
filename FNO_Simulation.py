@@ -295,127 +295,57 @@ print(batch_total)
 showloss = []
 # start
 for ep in tqdm(range(epochs_done, epochs)):
-    model.train() # we let it train!
-    t1 = default_timer() # ok we get a timer
+    model.train() 
+    t1 = default_timer() 
     train_mse = 0
     train_l2 = 0
     train_rela = 0  
     test_rela = 0
     
-    #20240125
     total_rela = []
     
     for x, y in train_loader:
         x = x.to(device)
-        y = y.to(device) # we put them to device at first
+        y = y.to(device) 
         
-        optimizer.zero_grad() #initialize the grad of optimizer
-        #print(x.shape)
-        #print(y.shape)
+        optimizer.zero_grad() 
+
         out = model(x) 
 
-        #out = out.view(batch_size, S, S, T_out) #ok make it a good size      
-        # compute the mse
         mse = F.mse_loss(out, y, reduction='mean')
-        # now we compute l2 error, we normalizer them finally
-  
 
         y = y_normalizer.decode(y)
         out = y_normalizer.decode(out)
-        #l2 = myloss(out.contiguous().view(batch_size, -1), y.contiguous().view(batch_size,-1))
         l2 = myloss(out.contiguous().view(out.shape[0], -1), y.contiguous().view(y.shape[0],-1))
-        
-        #l2 = myloss(out.reshape(batch_size*S*S*T_out), y.reshape(batch_size*S*S*T_out))
-        
-        #l2.backward() #update grad data
-        #optimizer.step() #ok I use the data above to update the model weights
-        
         train_mse += mse.item()
         train_l2 += l2.item()
-#         trainLLL = []
-#         for homme in range(T_out):
-#             train_step_rela = torch.mean(torch.sqrt(torch.mean(torch.square(out[:,:,:,homme] - y[:,:,:,homme]), axis = (0,1,2)) / torch.mean(torch.square(y[:,:,:,homme]), axis = (0,1,2))))
-#             #print(train_step_rela)
-#             trainLLL.append(train_step_rela)
- 
-         # 新增：计算并累加相对误差 20231117
-        #relative_error = torch.mean(torch.abs((out - y) / (y + 1e-8)))  # 防止除以零
-        
-        # relative_error_train = torch.mean(torch.sqrt(torch.mean(torch.square(out - y), axis = (0,1,2,3)) / torch.mean(torch.square(y), axis = (0,1,2,3))))
-        # For CNO
-        
         relative_error_train = torch.mean(torch.sqrt(torch.mean(torch.square(out - y), axis = (1,2)) / torch.mean(torch.square(y), axis = (1,2))))
-        #测试的时候这个注释，训练的时候去掉
         relative_error_train.backward()
         print("train relative error")
         print(relative_error_train)
-        #print(torch.mean(torch.square(out - y), axis = (1, 2)))
         train_rela += relative_error_train.item()
         
         optimizer.step()
-    #one ep done, let's step forward in scheduler
     scheduler.step()
     
-      
-    #ok let's eval
     model.eval()
     test_l2 = 0.0
-    
     
     totaltttList = []
     count = 0
     with torch.no_grad():
         for x, y in test_loader:
             tttList = []
-            #for recurent input and output
-            # for 1in 1 out 29 connect
-            #ConnectOut = torch.tensor([]).to(device)
-            # sdf_test (10494,50,50,1)
             x, y = x.to(device), y.to(device)
             y = y[:,:,:,:T_out]
             out = model(x).view(x.shape[0], S, S, T_out)
-
-            #For CNO
-            #out = model(x).view(x.shape[0], T_out, S, S)
-        
-            #sdf_connect = sdf_test[count*500:count*500+x.shape[0],:,:,:]
             count = count+1
-            #print(out.shape)
             out = y_normalizer.decode(out)
-#             ConnectOut = torch.cat((out, ConnectOut), -1)
-#             print(torch.mean(torch.sqrt(torch.mean(torch.square(out - y[:,:,:,0:1]), axis = (0,1,2,3)) / torch.mean(torch.square(y[:,:,:,0:1]), axis = (0,1,2,3)))))
-#             tttList.append(torch.mean(torch.sqrt(torch.mean(torch.square(out - y[:,:,:,0:1]), axis = (0,1,2,3)) / torch.mean(torch.square(y[:,:,:,0:1]), axis = (0,1,2,3)))))
-#             for inputTime in range(28):
-#                 out.to(device)
-#                 out = a_normalizer.encode(out)
-#                 print(out.shape)
-#                 print(sdf_connect.shape)
-#                 out = torch.cat((out, sdf_connect.to(device)), -1)
-#                 out = model(out).view(x.shape[0], S, S, T_out)
-#                 out = y_normalizer.decode(out)
-#                 oneInRecur29Error = torch.mean(torch.sqrt(torch.mean(torch.square(out - y[:,:,:,inputTime+1:inputTime+2]), axis = (0,1,2,3)) / torch.mean(torch.square(y[:,:,:,inputTime+1:inputTime+2]), axis = (0,1,2,3))))
-#                 print(oneInRecur29Error)
-#                 tttList.append(oneInRecur29Error)
-#                 ConnectOut = torch.cat((out, ConnectOut), -1)
-#             print("Connect!")
-#             print(ConnectOut.shape)
             for homme in range(T_out):
                 train_step_rela = torch.mean(torch.sqrt(torch.mean(torch.square(out[:,:,:,homme] - y[:,:,:,homme]), axis = (1,2)) / torch.mean(torch.square(y[:,:,:,homme]), axis = (1,2))))
-                # For CNO
-                #train_step_rela = torch.mean(torch.sqrt(torch.mean(torch.square(out[:,homme,:,:] - y[:,homme,:,:]), axis = (1,2)) / torch.mean(torch.square(y[:,homme,:,:]), axis = (1,2))))
-                #print(train_step_rela)
                 tttList.append(train_step_rela)
             totaltttList.append(tttList)
             
-            
-            #np.save('20240129FixRandom_output.npy', out.cpu())
-            #np.save('20240129FixRandom_ground.npy', y.cpu())
-            
-            #test_l2 += myloss(out.contiguous().view(out.shape[0], -1), y.contiguous().view(y.shape[0], -1)).item()
-            #test_l2 += myloss(out.reshape(batch_size*S*S*T_out), y.reshape(batch_size*S*S*T_out)).item()
-             
-            # 新增：计算并累加相对误差 20231225
-            #relative_error_test = torch.mean(torch.sqrt(torch.mean(torch.square(out - y), axis = (0,1,2,3)) / torch.mean(torch.square(y), axis = (0,1,2,3))))
             relative_error_test = torch.mean(torch.sqrt(torch.mean(torch.square(out - y), axis = (1,2)) / torch.mean(torch.square(y), axis = (1,2))))
             print("test relative error")
             print(relative_error_test)
@@ -423,46 +353,21 @@ for ep in tqdm(range(epochs_done, epochs)):
     
    
     hoshiList = []
-    for index in range(T_out): # 29 frames
+    for index in range(T_out): 
         tmpval = 0
-        for yndex in range(batch_total): # 21
+        for yndex in range(batch_total): 
             tmpval += totaltttList[yndex][index]
-            #print(yndex)
-            #print(totaltttList[yndex][index])
         tmpval /= batch_total
         tmpval = tmpval.cpu().numpy()
-        #print(tmpval)
         hoshiList.append(tmpval)
     print(hoshiList)
  
-    # All On Niigata
-
-   # np.save('20240318FNOCombineOnNii.npy',hoshiList)
-    
-    
-    #sys.exit()        
-    
-    # compute and put error into
     train_mse /= len(train_loader)
     train_l2 /= ntrain
     test_l2 /= ntest
-    
-    # 计算平均相对误差
     train_rela /= len(train_loader)
     test_rela /= len(test_loader)
 
-    # 记录损失
-    # showloss.append(train_rela)
-
-    # # 绘图
-    # clear_output(wait=True)
-    # plt.figure(figsize=(10, 5))
-    # plt.plot(range(ep+1), showloss)
-    # plt.xlabel('Epoch')
-    # plt.ylabel('Loss')
-    # plt.title('Training Loss Over Time')
-    # plt.show()
-    
     train_mse_err = torch.cat((train_mse_err, torch.tensor([train_mse])), -1)
     train_l2_err = torch.cat((train_l2_err, torch.tensor([train_l2])), -1)
     test_l2_err = torch.cat((test_l2_err, torch.tensor([test_l2])), -1)
@@ -470,11 +375,8 @@ for ep in tqdm(range(epochs_done, epochs)):
     test_rela_err = torch.cat((test_rela_err, torch.tensor([test_rela])),-1)
     
     
-    
     t2 = default_timer()
     print(f'{ep}, {t2-t1:.2f}, {train_mse:.5f}, {train_l2:.5f}, {test_l2:.5f}, {train_rela:.5f}, {test_rela:.5f}')
-    
-    #finally we just saved our data
     if ep%5 == 0:
       torch.save({
             'epoch': ep+1,

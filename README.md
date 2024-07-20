@@ -16,8 +16,8 @@ To get started with this project, you need to have Python installed. Follow the 
 
 1. **Clone the repository**:
     ```bash
-    git clone https://github.com/yourusername/your-repo-name.git
-    cd your-repo-name
+    git clone https://github.com/chengchencon/FNO-Simulation.git
+    cd FNO-Simulation
     ```
 
 2. **Create a virtual environment** (optional but recommended):

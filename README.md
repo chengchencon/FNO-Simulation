@@ -1,4 +1,4 @@
-# Project Title
+# FNO Simulation
 
 A brief description of what this project does and who it's for.
 

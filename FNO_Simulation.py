@@ -91,7 +91,8 @@ class FNO2d(nn.Module):
         self.width = width
         self.padding = 8 # pad the domain if input is non-periodic
 
-        self.p = nn.Linear(8, self.width) # input channel is 12: the solution of the previous 10 timesteps + 2 locations (u(t-10, x, y), ..., u(t-1, x, y),  x, y)
+        #here YOUT_INPUT means input num + 3
+        self.p = nn.Linear(YOUR_INPUT, self.width) # input channel is 12: the solution of the previous 10 timesteps + 2 locations (u(t-10, x, y), ..., u(t-1, x, y),  x, y)
         self.conv0 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
         self.conv1 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
         self.conv2 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
@@ -114,7 +115,8 @@ class FNO2d(nn.Module):
         
         
         self.norm = nn.InstanceNorm2d(self.width)
-        self.q = MLP(self.width, 25, self.width * 4) # output channel is 1: u(x, y)
+        # SET YOUR_OUTPUT as your number
+        self.q = MLP(self.width, YOUR_OUTPUT, self.width * 4) # output channel is 1: u(x, y)
 
     def forward(self, x):
         grid = self.get_grid(x.shape, x.device)
@@ -165,11 +167,10 @@ class FNO2d(nn.Module):
 
 
 
-TRAIN_PATH_Niigata = '20240626Niigata实验数据/20240626SlicedNiigata_42times_40timeOverlap_RandomTrain_64x64.npy'
-TRAIN_SDF_Niigata = '20240626Niigata实验数据/20240626SlicedNiigata_42times_40timeOverlap_RandomTrain_64x64_SDF.npy'
-
-TEST_PATH_Niigata = '202407写论文需要的全部工作/实验结果/20240701SlicedNiigata_1200times_00timeOverlap_WestTestUpDown_64x64_16个拼出原图.npy'
-TEST_SDF_Niigata = '202407写论文需要的全部工作/实验结果/20240701SlicedNiigata_1200times_00timeOverlap_WestTestUpDown_64x64_16个拼出原图_SDF.npy'
+TRAIN_PATH_Niigata = Your_TrainData.npy
+TRAIN_SDF_Niigata = Your_TrainDataSDF.npy
+TEST_PATH_Niigata = Your_TestData.npy
+TEST_SDF_Niigata =  Your_TestDataSDF.npy
 
 
 
@@ -188,15 +189,11 @@ T_in = 5
 T_out = 25
 
 
-model_path = '20240626Niigata实验结果/20240626Gelu_NiigataWestTestOnUDRotate_modes'+str(modes)+'_width'+str(width)+'_epoch'+str(epochs)+'_input'+str(T_in)+'_output'+str(T_out)+'_40timeOverlap_'+str(S)+'x'+str(S)+'_WITHSDF'
+model_path = 'YourModel_modes'+str(modes)+'_width'+str(width)+'_epoch'+str(epochs)+'_input'+str(T_in)+'_output'+str(T_out)+'_40timeOverlap_'+str(S)+'x'+str(S)+'_WITHSDF'
 
 
 train_err_path = model_path+'_trainErr.txt'
 test_err_path = model_path+'_testErr.txt'
-image_path = '20240626MontrealIMG/'+model_path
-
-
-
 
 data_train_nii = np.load(TRAIN_PATH_Niigata)
 data_test_nii = np.load(TEST_PATH_Niigata)
@@ -212,7 +209,6 @@ train_u = data_train[:, :, :, T_in:T_in+T_out]
 test_a = data_test[:, :, :, :T_in]
 test_u = data_test[:, :, :, T_in:T_in+T_out]
 
-
 # Torchlize
 train_a = torch.Tensor(train_a)
 train_u = torch.Tensor(train_u)
@@ -225,7 +221,6 @@ train_a = a_normalizer.encode(train_a)
 test_a = a_normalizer.encode(test_a)
 y_normalizer = GaussianNormalizer(train_u)
 train_u = y_normalizer.encode(train_u)
-
 
 
 sdfTrainNii = np.load(TRAIN_SDF_Niigata)
@@ -253,7 +248,6 @@ test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(test_a,
 batch_total = round(test_u.shape[0]/batch_size)
 del  data_train_nii, train_a, train_u, test_a, test_u, sdf_train, sdf_test
 
-
 #training error and testing error and epochs
 train_mse_err = torch.tensor([])
 test_l2_err = torch.tensor([])
@@ -264,7 +258,6 @@ test_rela_err = torch.tensor([])
 epochs_done = 0
 
 model = FNO2d(modes, modes, width).to(device)
-
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step, gamma=scheduler_gamma, verbose=True)
 
@@ -311,9 +304,7 @@ for ep in tqdm(range(epochs_done, epochs)):
         optimizer.zero_grad() 
 
         out = model(x) 
-
         mse = F.mse_loss(out, y, reduction='mean')
-
         y = y_normalizer.decode(y)
         out = y_normalizer.decode(out)
         l2 = myloss(out.contiguous().view(out.shape[0], -1), y.contiguous().view(y.shape[0],-1))
@@ -330,7 +321,6 @@ for ep in tqdm(range(epochs_done, epochs)):
     
     model.eval()
     test_l2 = 0.0
-    
     totaltttList = []
     count = 0
     with torch.no_grad():

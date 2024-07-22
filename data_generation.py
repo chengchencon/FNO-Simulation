@@ -3,11 +3,14 @@ import torch
 import matplotlib.pyplot as plt
 from utilities3 import *
 import numpy as np
+import scipy.ndimage
+import matplotlib.pyplot as plt
+import os
 
 # read necessary original wind simulation data
-import matplotlib.pyplot as plt
-import numpy as np
-import os
+
+
+# read necessary original wind simulation data
 TRAIN_PATH="data/Niigata_west_2m.npy" 
 data = np.load(TRAIN_PATH)
 
@@ -55,7 +58,51 @@ for coord in unique_coords:
         subarrays.append(subarray)       
     
 DataSliced = np.array(subarrays)
-
-
-
 np.save("data/your_wishedName.npy", DataSliced)
+
+
+# generate black/white mask and SDF
+
+
+def binary_sdf_from_npy(npy_path, threshold_value):
+    data = npy_path
+    
+    binary_image = np.where(data > threshold_value, 0, 1)
+
+    binary_image = 1 - binary_image  
+    
+    # calculate the outside distance (wind area)
+    sdf_outside = scipy.ndimage.distance_transform_edt(binary_image)
+    
+    # calculate the inside distance (building area)
+    sdf_inside = scipy.ndimage.distance_transform_edt(binary_image == 0)
+    
+    sdf = sdf_outside - sdf_inside 
+    
+    return binary_image, sdf
+
+
+#select one slice you wish to use for calculating SDF
+sdf_select_index = 400
+npy_path = data[:,:,sdf_select_index]
+#Set the threshold value based on your need
+threshold_value = 0.15 
+
+binary_image, sdf = binary_sdf_from_npy(npy_path, threshold_value)
+
+# Visulaize the generated building mask and SDF
+plt.figure(figsize=(12, 6))
+plt.subplot(1, 2, 1)
+plt.imshow(binary_image, cmap='gray')
+plt.title('Binary Image')
+plt.colorbar()
+plt.axis('off')
+plt.subplot(1, 2, 2)
+plt.imshow(sdf)
+plt.title('Signed Distance Function')
+plt.colorbar()
+plt.axis('off')
+plt.show()
+
+#save sdf if you wish
+#np.save("data/your_wishedNameSDF.npy", sdf)

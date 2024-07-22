@@ -6,6 +6,7 @@ import numpy as np
 import scipy.ndimage
 import matplotlib.pyplot as plt
 import os
+import random, pickle
 
 # read necessary original wind simulation data
 
@@ -22,7 +23,6 @@ data = np.transpose(data,(1,2,0))
 data=data[72:328,72:328,180:]
 
 # Generate the random coordinates
-import random, pickle
 
 def generate_all_coordinates(x_start, x_end, y_start, y_end):
     all_coords = []

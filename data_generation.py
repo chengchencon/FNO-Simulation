@@ -33,4 +33,29 @@ all_coords = generate_all_coordinates(0,192,0,192) #192+64 = 256
 location_select = 80
 unique_coords = random.sample(all_coords, location_select)
 
-#print(len(all_coords))
+
+# sampling the data into patches
+
+
+subarrays = []
+timestep = 1 
+
+
+
+# decide the resolution of each patch
+patch_length = 64
+trunk_len = 30
+final_time = 1020-trunk_len
+step = 2
+for coord in unique_coords:
+    x = coord[0]
+    y = coord[1]
+    for k in range(0,final_time,step):
+        subarray = data[x:x+patch_length, y:y+patch_length, k:k+trunk_len]
+        subarrays.append(subarray)       
+    
+DataSliced = np.array(subarrays)
+
+
+
+np.save("data/your_wishedName.npy", DataSliced)

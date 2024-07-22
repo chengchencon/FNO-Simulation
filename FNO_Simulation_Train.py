@@ -10,6 +10,9 @@ import operator
 from functools import reduce
 from functools import partial
 from timeit import default_timer
+from tqdm import tqdm
+from IPython.display import clear_output
+
 torch.manual_seed(3407)
 np.random.seed(0)
 torch.set_num_threads(1)
@@ -256,36 +259,33 @@ test_rela_err = torch.tensor([])
 
 epochs_done = 0
 
+#Initialize FNO
 model = FNO2d(modes, modes, width).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step, gamma=scheduler_gamma, verbose=True)
 
 
-
-checkpoint = torch.load(model_path+'.pt', map_location=torch.device('cuda:1'))
+checkpoint = torch.load(model_path+'.pt', map_location=torch.device('cuda:0'))
 model.load_state_dict(checkpoint['model_state_dict'])
 optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
 epochs_done = checkpoint['epoch']
 
-# train_mse_err = torch.load('20240128FNO_test30_modes26width40_RelaLoss_00timeOverlap_Random_MTL500x500x2000_T_in1_T_out29_ep_50_Train_mse_arr')
-# train_l2_err = torch.load('20240128FNO_test30_modes26width40_RelaLoss_00timeOverlap_Random_MTL500x500x2000_T_in1_T_out29_ep_50_Train_l2_arr')
+# train_mse_err = torch.load('Your_Train_mse_arr')
+# train_l2_err = torch.load('Your_Train_l2_arr')
 # test_l2_err = torch.load('20240128FNO_test30_modes26width40_RelaLoss_00timeOverlap_Random_MTL500x500x2000_T_in1_T_out29_ep_50_Test_l2_arr')
-# train_rela_err = torch.load('20240128FNO_test30_modes26width40_RelaLoss_00timeOverlap_Random_MTL500x500x2000_T_in1_T_out29_ep_50_Train_rela')
-# test_rela_err = torch.load('20240128FNO_test30_modes26width40_RelaLoss_00timeOverlap_Random_MTL500x500x2000_T_in1_T_out29_ep_50_Test_rela')
+# train_rela_err = torch.load('Your_Train_rela')
+# test_rela_err = torch.load('Your_Test_rela')
 
 
 
-import sys
-from IPython.display import clear_output
-device = 'cuda:1'
-from tqdm import tqdm
+device = 'cuda:0'
 myloss = LpLoss(size_average=False)
 y_normalizer.to(device)
 model = model.to(device)
-print(batch_total)
-showloss = []
-# start
+#print(batch_total)
+
+# start training
 for ep in tqdm(range(epochs_done, epochs)):
     model.train() 
     t1 = default_timer() 
@@ -293,7 +293,6 @@ for ep in tqdm(range(epochs_done, epochs)):
     train_l2 = 0
     train_rela = 0  
     test_rela = 0
-    
     total_rela = []
     
     for x, y in train_loader:
@@ -301,7 +300,6 @@ for ep in tqdm(range(epochs_done, epochs)):
         y = y.to(device) 
         
         optimizer.zero_grad() 
-
         out = model(x) 
         mse = F.mse_loss(out, y, reduction='mean')
         y = y_normalizer.decode(y)
@@ -311,20 +309,19 @@ for ep in tqdm(range(epochs_done, epochs)):
         train_l2 += l2.item()
         relative_error_train = torch.mean(torch.sqrt(torch.mean(torch.square(out - y), axis = (1,2)) / torch.mean(torch.square(y), axis = (1,2))))
         relative_error_train.backward()
-        print("train relative error")
-        print(relative_error_train)
+       # print("train relative error")
+        #print(relative_error_train)
         train_rela += relative_error_train.item()
-        
         optimizer.step()
     scheduler.step()
     
     model.eval()
     test_l2 = 0.0
-    totaltttList = []
+    total_rela_list = []
     count = 0
     with torch.no_grad():
         for x, y in test_loader:
-            tttList = []
+            rela_list = []
             x, y = x.to(device), y.to(device)
             y = y[:,:,:,:T_out]
             out = model(x).view(x.shape[0], S, S, T_out)
@@ -332,24 +329,22 @@ for ep in tqdm(range(epochs_done, epochs)):
             out = y_normalizer.decode(out)
             for homme in range(T_out):
                 train_step_rela = torch.mean(torch.sqrt(torch.mean(torch.square(out[:,:,:,homme] - y[:,:,:,homme]), axis = (1,2)) / torch.mean(torch.square(y[:,:,:,homme]), axis = (1,2))))
-                tttList.append(train_step_rela)
-            totaltttList.append(tttList)
-            
+                rela_List.append(train_step_rela)
+            total_rela_list.append(tttList)
             relative_error_test = torch.mean(torch.sqrt(torch.mean(torch.square(out - y), axis = (1,2)) / torch.mean(torch.square(y), axis = (1,2))))
             print("test relative error")
             print(relative_error_test)
             test_rela += relative_error_test.item()
     
-   
-    hoshiList = []
+    single_rela_list = []
     for index in range(T_out): 
         tmpval = 0
         for yndex in range(batch_total): 
-            tmpval += totaltttList[yndex][index]
+            tmpval += total_rela_list[yndex][index]
         tmpval /= batch_total
         tmpval = tmpval.cpu().numpy()
-        hoshiList.append(tmpval)
-    print(hoshiList)
+        single_rela_list.append(tmpval)
+   # print(single_rela_list)
  
     train_mse /= len(train_loader)
     train_l2 /= ntrain
@@ -373,11 +368,11 @@ for ep in tqdm(range(epochs_done, epochs)):
             'optimizer_state_dict': optimizer.state_dict(),
             'scheduler_state_dict': scheduler.state_dict()
             }, model_path+'.pt')
-    torch.save(train_mse_err, '20240626Niigata实验结果/Gelu20240626NiigataWestDataTestOnUDRotate64x64_train70_test30_modes'+str(modes)+'width'+str(width)+'_RelaLoss_40timeOverlap_Random_T_in'+str(T_in)+'_T_out'+str(T_out)+'_ep_'+str(epochs)+'_Train_mse_arr')#manually named
-    torch.save(train_l2_err, '20240626Niigata实验结果/Gelu20240626NiigataWestDataTestOnUDRotate64x64_train70_test30_modes'+str(modes)+'width'+str(width)+'_RelaLoss_40timeOverlap_Random_T_in'+str(T_in)+'_T_out'+str(T_out)+'_ep_'+str(epochs)+'_Train_l2_arr')
-    torch.save(test_l2_err, '20240626Niigata实验结果/Gelu20240626NiigataWestDataTestOnUDRotate64x64_train70_test30_modes'+str(modes)+'width'+str(width)+'_RelaLoss_40timeOverlap_Random_T_in'+str(T_in)+'_T_out'+str(T_out)+'_ep_'+str(epochs)+'_Test_l2_arr')
-    torch.save(train_rela_err, '20240626Niigata实验结果/Gelu20240626NiigataWestDataTestOnUDRotate64x64_train70_test30_modes'+str(modes)+'width'+str(width)+'_RelaLoss_40timeOverlap_Random_T_in'+str(T_in)+'_T_out'+str(T_out)+'_ep_'+str(epochs)+'_Train_rela')
-    torch.save(test_rela_err, '20240626Niigata实验结果/Gelu2024062NiigataWestDataTestOnUDRotate64x64_train70_test30_modes'+str(modes)+'width'+str(width)+'_RelaLoss_40timeOverlap_Random_T_in'+str(T_in)+'_T_out'+str(T_out)+'_ep_'+str(epochs)+'_Test_rela')
+    torch.save(train_mse_err, 'result/YourWishName_train70_test30_modes'+str(modes)+'width'+str(width)+'_RelaLoss_40timeOverlap_Random_T_in'+str(T_in)+'_T_out'+str(T_out)+'_ep_'+str(epochs)+'_Train_mse_arr')#manually named
+    torch.save(train_l2_err, 'result/YourWishName_train70_test30_modes'+str(modes)+'width'+str(width)+'_RelaLoss_40timeOverlap_Random_T_in'+str(T_in)+'_T_out'+str(T_out)+'_ep_'+str(epochs)+'_Train_l2_arr')
+    torch.save(test_l2_err, 'result/YourWishName_train70_test30_modes'+str(modes)+'width'+str(width)+'_RelaLoss_40timeOverlap_Random_T_in'+str(T_in)+'_T_out'+str(T_out)+'_ep_'+str(epochs)+'_Test_l2_arr')
+    torch.save(train_rela_err, 'result/YourWishName_train70_test30_modes'+str(modes)+'width'+str(width)+'_RelaLoss_40timeOverlap_Random_T_in'+str(T_in)+'_T_out'+str(T_out)+'_ep_'+str(epochs)+'_Train_rela')
+    torch.save(test_rela_err, 'result/YourWishName_train70_test30_modes'+str(modes)+'width'+str(width)+'_RelaLoss_40timeOverlap_Random_T_in'+str(T_in)+'_T_out'+str(T_out)+'_ep_'+str(epochs)+'_Test_rela')
        
     print(f'saved epoch {ep} successfully!')
     

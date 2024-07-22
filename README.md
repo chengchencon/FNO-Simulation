@@ -1,6 +1,6 @@
-# FNO Simulation
+# Evaluation of FNO performance on 2D Urban Wind Field
 
-This repository contains the code necessary to reproduce the results presented in the paper "xxxx". The paper explores innovative approaches and methodologies in the field of [insert field of study, e.g., machine learning, data science, etc.], providing valuable insights and advancements.
+This repository contains the code necessary to reproduce the results presented in the paper "Evaluation of FNO performance on 2D Urban Wind Field". The paper explores innovative approaches and methodologies in the field of [insert field of study, e.g., machine learning, data science, etc.], providing valuable insights and advancements.
 
 ![West Output](pics/20240701TestPatches5mDelta0Niigata5in25outWestComparison0.gif)
 

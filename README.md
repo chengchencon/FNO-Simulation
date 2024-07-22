@@ -27,7 +27,7 @@ To get started with this project, you need to have Python installed. Follow the 
 
 2. **Create a virtual environment** (optional but recommended):
     ```bash
-    python -m venv env
+    python3 -m venv env
     source env/bin/activate  # On Windows use `env\Scripts\activate`
     ```
 

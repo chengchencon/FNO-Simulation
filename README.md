@@ -33,7 +33,7 @@ To get started with this project, you need to have Python installed. Follow the 
 
 3. **Install the required libraries**:
     ```bash
-    pip install -r requirements.txt
+    pip3 install -r requirements.txt
     ```
 
 ## Usage
@@ -42,7 +42,7 @@ After setting up the environment and installing the necessary libraries, you can
 
 1. **Run the model script**:
     ```bash
-    python model_script.py
+    python3 FNO_Simulation_Train.py
     ```
 
 2. **Check the output**:

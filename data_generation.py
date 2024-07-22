@@ -106,3 +106,26 @@ plt.show()
 
 #save sdf if you wish
 #np.save("data/your_wishedNameSDF.npy", sdf)
+
+# Sampling SDF data
+blocks = []
+patch_length = 64
+trunk_len = 30
+final_time = 1020-trunk_len
+step = 2
+patch_length = 64
+for coord in unique_coords:
+    x = coord[0]
+    y = coord[1]
+    for k in range(0,final_time,step):
+        block = show[x:x+patch_length, y:y+patch_length]
+        blocks.append(block) 
+        
+
+
+stacked_blocksSdf = np.stack(blocks,axis=0)
+
+print(stacked_blocksSdf.shape)
+
+#save sdf as you wish
+#np.save('data/SDFdata.npy', stacked_blocksSdf)

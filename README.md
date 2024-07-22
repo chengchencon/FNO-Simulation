@@ -2,9 +2,9 @@
 
 This repository contains the code necessary to reproduce the results presented in the paper "xxxx". The paper explores innovative approaches and methodologies in the field of [insert field of study, e.g., machine learning, data science, etc.], providing valuable insights and advancements.
 
-![](pics/20240701TestPatches5mDelta0Niigata5in25outWestComparison0.gif)
+![West Output](pics/20240701TestPatches5mDelta0Niigata5in25outWestComparison0.gif)
 
-![](pics/pics/accumulated_meanAbsoError_West_TrainVsTest.png)
+![West Train Error Vs Test Error](pics/accumulated_meanAbsoError_West_TrainVsTest.png)
 
 
 ## Table of Contents

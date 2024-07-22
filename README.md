@@ -43,8 +43,21 @@ After setting up the environment and installing the necessary libraries, you can
 2. **Check the output**:
     The results will be saved in the `results` directory. You can modify the script or use different input data as needed.
 
-## Data Used
+## Datasets
+
+### Data link
+The following datasets were used in this project:
+
 https://drive.google.com/drive/folders/1QFJfiYjhq7O8VLob6MqcXUG-_9ajwDIK
+
+### Test Datasets
+1. **Niigata_West_2m_UpDown_SDF.npy** - This dataset contains up-down sampled data for testing purposes.
+2. **Niigata_West_2m_UpDown.npy** - This dataset includes the up-down sampled data used for testing.
+
+### Training Datasets
+1. **Niigata_West_2m_WholeSDF.npy** - This dataset contains the whole SDF data used for training.
+2. **Niigata_west_2m.npy** - This dataset includes the 2m height wind data used for training.
+
 
 ## Contributing
 
